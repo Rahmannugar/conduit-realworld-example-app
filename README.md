@@ -100,7 +100,7 @@ npm run start
 
 ## AI Usage
 
-Claude/ opencode were used to scaffold the feature: API, UI, tests and CI.
+Deepseek via Opencode was used to scaffold the feature: API, UI, tests and CI.
 
 ## Known limitations
 
