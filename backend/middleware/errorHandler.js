@@ -1,4 +1,6 @@
 const {
+  BadRequestError,
+  ConflictError,
   ForbiddenError,
   NotFoundError,
   UnauthorizedError,
@@ -20,8 +22,17 @@ const errorHandler = (error, req, res, next) => {
     console.log(error);
 
     res.status(404).json({ errors: { body: [error.message] } });
+  } else if (error instanceof ConflictError) {
+    console.log(error);
+
+    res.status(409).json({ errors: { body: [error.message] } });
+  } else if (error instanceof BadRequestError) {
+    console.log(error);
+
+    res.status(400).json({ errors: { body: [error.message] } });
   } else if (error instanceof ValidationError) {
     console.log(error);
+
     res.status(422).json({ errors: { body: [error.message] } });
   } else {
     console.log(error);

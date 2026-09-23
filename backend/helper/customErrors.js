@@ -21,6 +21,10 @@ class UnauthorizedError extends MyError {
   }
 }
 
+class BadRequestError extends MyError {}
+
+class ConflictError extends MyError {}
+
 class ValidationError extends MyError {}
 
 class FieldRequiredError extends ValidationError {
@@ -37,6 +41,8 @@ class AlreadyTakenError extends ValidationError {
 
 module.exports = {
   AlreadyTakenError,
+  BadRequestError,
+  ConflictError,
   FieldRequiredError,
   ForbiddenError,
   NotFoundError,

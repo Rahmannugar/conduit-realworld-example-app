@@ -11,6 +11,7 @@ const userRoutes = require("./routes/user");
 const articlesRoutes = require("./routes/articles");
 const profilesRoutes = require("./routes/profiles");
 const tagsRoutes = require("./routes/tags");
+const collectionsRoutes = require("./routes/collections");
 
 const app = express();
 app.use(cors());
@@ -18,7 +19,7 @@ app.use(express.json());
 
 (async () => {
   try {
-    await sequelize.sync({ alter: true });
+    await sequelize.authenticate();
     console.log(`Connection with ${env} database has been established.`);
   } catch (error) {
     console.error("Unable to connect to the database:", error);
@@ -35,6 +36,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/articles", articlesRoutes);
 app.use("/api/profiles", profilesRoutes);
 app.use("/api/tags", tagsRoutes);
+app.use("/api/collections", collectionsRoutes);
 app.get("/*any", (req, res) =>
   res.status(404).json({ errors: { body: ["Not found"] } }),
 );
