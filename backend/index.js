@@ -17,15 +17,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-(async () => {
-  try {
-    await sequelize.authenticate();
-    console.log(`Connection with ${env} database has been established.`);
-  } catch (error) {
-    console.error("Unable to connect to the database:", error);
-  }
-})();
-
 if (process.env.NODE_ENV === "production") {
   app.use(express.static("../frontend/dist"));
 } else {
@@ -42,6 +33,19 @@ app.get("/*any", (req, res) =>
 );
 app.use(errorHandler);
 
-app.listen(PORT, () =>
-  console.log(`Server running on http://localhost:${PORT}`),
-);
+if (require.main === module) {
+  (async () => {
+    try {
+      await sequelize.authenticate();
+      console.log(`Connection with ${env} database has been established.`);
+    } catch (error) {
+      console.error("Unable to connect to the database:", error);
+    }
+  })();
+
+  app.listen(PORT, () =>
+    console.log(`Server running on http://localhost:${PORT}`),
+  );
+}
+
+module.exports = app;
