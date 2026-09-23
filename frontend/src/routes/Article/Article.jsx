@@ -5,6 +5,7 @@ import ArticleMeta from "../../components/ArticleMeta";
 import ArticlesButtons from "../../components/ArticlesButtons";
 import ArticleTags from "../../components/ArticleTags";
 import BannerContainer from "../../components/BannerContainer";
+import SaveToCollection from "../../components/SaveToCollection";
 import { useAuth } from "../../context/AuthContext";
 import getArticle from "../../services/getArticle";
 
@@ -33,6 +34,7 @@ function Article() {
         <h1>{title}</h1>
         <ArticleMeta author={author} createdAt={createdAt}>
           <ArticlesButtons article={article} setArticle={setArticle} />
+          <SaveToCollection slug={slug} />
         </ArticleMeta>
       </BannerContainer>
 

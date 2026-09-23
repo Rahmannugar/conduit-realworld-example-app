@@ -1,6 +1,7 @@
 import {
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
@@ -8,6 +9,7 @@ import {
   addArticleToCollection,
   createCollection,
   deleteCollection,
+  getArticleCollections,
   getCollection,
   listCollections,
   removeArticleFromCollection,
@@ -18,6 +20,10 @@ export const collectionsQueryKey = ["collections"];
 export const collectionQueryKey = (collectionId) => [
   "collections",
   collectionId,
+];
+export const articleCollectionsQueryKey = (slug) => [
+  "article-collections",
+  slug,
 ];
 
 export const DEFAULT_COLLECTIONS_LIMIT = 20;
@@ -48,6 +54,16 @@ function useCollectionQuery({
     queryFn: ({ pageParam }) =>
       getCollection({ collectionId, cursor: pageParam, headers, limit }),
     queryKey: collectionQueryKey(collectionId),
+  });
+}
+
+function useArticleCollectionsQuery({ slug } = {}) {
+  const { headers } = useAuth();
+
+  return useQuery({
+    enabled: Boolean(headers && slug),
+    queryFn: () => getArticleCollections({ headers, slug }),
+    queryKey: articleCollectionsQueryKey(slug),
   });
 }
 
@@ -89,10 +105,13 @@ function useCollectionMutations() {
   const addArticle = useMutation({
     mutationFn: ({ collectionId, slug }) =>
       addArticleToCollection({ collectionId, headers, slug }),
-    onSuccess: (_article, { collectionId }) => {
+    onSuccess: (_article, { collectionId, slug }) => {
       invalidateLists();
       queryClient.invalidateQueries({
         queryKey: collectionQueryKey(collectionId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: articleCollectionsQueryKey(slug),
       });
     },
   });
@@ -100,10 +119,13 @@ function useCollectionMutations() {
   const removeArticle = useMutation({
     mutationFn: ({ collectionId, slug }) =>
       removeArticleFromCollection({ collectionId, headers, slug }),
-    onSuccess: (_data, { collectionId }) => {
+    onSuccess: (_data, { collectionId, slug }) => {
       invalidateLists();
       queryClient.invalidateQueries({
         queryKey: collectionQueryKey(collectionId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: articleCollectionsQueryKey(slug),
       });
     },
   });
@@ -111,4 +133,9 @@ function useCollectionMutations() {
   return { addArticle, create, remove, removeArticle, update };
 }
 
-export { useCollectionMutations, useCollectionQuery, useCollectionsQuery };
+export {
+  useArticleCollectionsQuery,
+  useCollectionMutations,
+  useCollectionQuery,
+  useCollectionsQuery,
+};

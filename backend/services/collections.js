@@ -246,11 +246,32 @@ const removeArticleFromCollection = async ({ user, collectionId, slug }) => {
   }
 };
 
+const listCollectionIdsForArticle = async ({ user, slug }) => {
+  const article = await findArticleBySlug(slug);
+
+  const rows = await ArticleCollection.findAll({
+    attributes: ["collectionId"],
+    include: [
+      {
+        attributes: [],
+        model: Collection,
+        required: true,
+        where: { userId: user.id },
+      },
+    ],
+    raw: true,
+    where: { articleId: article.id },
+  });
+
+  return rows.map((row) => row.collectionId);
+};
+
 module.exports = {
   addArticleToCollection,
   createCollection,
   deleteCollection,
   getCollection,
+  listCollectionIdsForArticle,
   listCollections,
   removeArticleFromCollection,
   updateCollection,

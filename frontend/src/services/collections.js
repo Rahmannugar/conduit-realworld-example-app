@@ -86,10 +86,20 @@ async function removeArticleFromCollection({ headers, collectionId, slug }) {
   });
 }
 
+async function getArticleCollections({ headers, slug }) {
+  const { collectionIds } = await request({
+    headers,
+    url: `api/articles/${slug}/collections`,
+  });
+
+  return collectionIds;
+}
+
 export {
   addArticleToCollection,
   createCollection,
   deleteCollection,
+  getArticleCollections,
   getCollection,
   listCollections,
   removeArticleFromCollection,

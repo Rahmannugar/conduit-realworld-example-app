@@ -10,6 +10,7 @@ const {
   createCollection,
   deleteCollection,
   getCollection,
+  listCollectionIdsForArticle,
   listCollections,
   removeArticleFromCollection,
   updateCollection,
@@ -187,10 +188,27 @@ const removeArticle = async (req, res, next) => {
   }
 };
 
+//* List the authenticated user's collections containing an article
+const forArticle = async (req, res, next) => {
+  try {
+    const user = requireUser(req);
+
+    const collectionIds = await listCollectionIdsForArticle({
+      user,
+      slug: req.params.slug,
+    });
+
+    res.json({ collectionIds });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   addArticle,
   create,
   destroy,
+  forArticle,
   list,
   removeArticle,
   single,

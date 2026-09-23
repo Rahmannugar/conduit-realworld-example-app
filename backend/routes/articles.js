@@ -9,6 +9,7 @@ const {
   deleteArticle,
   articlesFeed,
 } = require("../controllers/articles");
+const { forArticle } = require("../controllers/collections");
 
 //? All Articles - by Author/by Tag/Favorited by user
 router.get("/", verifyToken, allArticles);
@@ -16,6 +17,8 @@ router.get("/", verifyToken, allArticles);
 router.post("/", verifyToken, createArticle);
 //* Feed
 router.get("/feed", verifyToken, articlesFeed);
+//* Collections containing this article (authenticated user's own)
+router.get("/:slug/collections", verifyToken, forArticle);
 // Single Article by slug
 router.get("/:slug", verifyToken, singleArticle);
 //* Update Article
