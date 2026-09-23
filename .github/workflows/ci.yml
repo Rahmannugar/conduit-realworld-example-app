@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # Throwaway credentials for the CI service container only.
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_user"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      JWT_KEY: ci_jwt_key
+      DEV_DB_USERNAME: ci_user
+      DEV_DB_PASSWORD: ci_password
+      DEV_DB_NAME: database_development
+      DEV_DB_HOSTNAME: 127.0.0.1
+      DEV_DB_DIALECT: postgres
+      DEV_DB_LOGGING: false
+      TEST_DB_USERNAME: ci_user
+      TEST_DB_PASSWORD: ci_password
+      TEST_DB_NAME: database_testing
+      TEST_DB_HOSTNAME: 127.0.0.1
+      TEST_DB_DIALECT: postgres
+      TEST_DB_LOGGING: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Static check
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test -- --run
+
+      - name: Build frontend
+        run: npm run build -w frontend
+
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    needs: test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_user"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: development
+      JWT_KEY: ci_jwt_key
+      DEV_DB_USERNAME: ci_user
+      DEV_DB_PASSWORD: ci_password
+      DEV_DB_NAME: database_development
+      DEV_DB_HOSTNAME: 127.0.0.1
+      DEV_DB_DIALECT: postgres
+      DEV_DB_LOGGING: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare database
+        run: |
+          npm run sqlz -- db:create
+          npm run sqlz -- db:migrate
+          npm run sqlz -- db:seed:all
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
