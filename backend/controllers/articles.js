@@ -11,7 +11,14 @@ const {
   appendTagList,
   slugify,
 } = require("../helper/helpers");
-const { Article, Tag, User } = require("../models");
+const {
+  Article,
+  ArticleCollection,
+  Collection,
+  Tag,
+  User,
+  sequelize,
+} = require("../models");
 
 const includeOptions = [
   { model: Tag, as: "tagList", attributes: ["name"] },
@@ -76,7 +83,7 @@ const createArticle = async (req, res, next) => {
     const { loggedUser } = req;
     if (!loggedUser) throw new UnauthorizedError();
 
-    const { title, description, body, tagList } = req.body.article;
+    const { title, description, body, tagList, collectionId } = req.body.article;
     if (!title) throw new FieldRequiredError("A title");
     if (!description) throw new FieldRequiredError("A description");
     if (!body) throw new FieldRequiredError("An article body");
@@ -85,24 +92,55 @@ const createArticle = async (req, res, next) => {
     const slugInDB = await Article.findOne({ where: { slug: slug } });
     if (slugInDB) throw new AlreadyTakenError("Title");
 
-    const article = await Article.create({
-      slug: slug,
-      title: title,
-      description: description,
-      body: body,
-    });
+    let collection = null;
+    if (collectionId !== undefined && collectionId !== null) {
+      const parsedCollectionId = Number(collectionId);
 
-    for (const tag of tagList) {
-      const tagInDB = await Tag.findByPk(tag.trim());
-
-      if (tagInDB) {
-        await article.addTagList(tagInDB);
-      } else if (tag.length > 2) {
-        const newTag = await Tag.create({ name: tag.trim() });
-
-        await article.addTagList(newTag);
+      if (!Number.isInteger(parsedCollectionId) || parsedCollectionId < 1) {
+        throw new NotFoundError("Collection");
       }
+
+      collection = await Collection.findOne({
+        where: { id: parsedCollectionId, userId: loggedUser.id },
+      });
+      if (!collection) throw new NotFoundError("Collection");
     }
+
+    const article = await sequelize.transaction(async (transaction) => {
+      const createdArticle = await Article.create(
+        {
+          slug: slug,
+          title: title,
+          description: description,
+          body: body,
+        },
+        { transaction },
+      );
+
+      for (const tag of tagList) {
+        const tagInDB = await Tag.findByPk(tag.trim(), { transaction });
+
+        if (tagInDB) {
+          await createdArticle.addTagList(tagInDB, { transaction });
+        } else if (tag.length > 2) {
+          const newTag = await Tag.create(
+            { name: tag.trim() },
+            { transaction },
+          );
+
+          await createdArticle.addTagList(newTag, { transaction });
+        }
+      }
+
+      if (collection) {
+        await ArticleCollection.create(
+          { collectionId: collection.id, articleId: createdArticle.id },
+          { transaction },
+        );
+      }
+
+      return createdArticle;
+    });
 
     delete loggedUser.dataValues.token;
 
