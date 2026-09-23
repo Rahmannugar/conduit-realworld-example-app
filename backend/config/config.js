@@ -1,27 +1,22 @@
+const parseLogging = (value) => {
+  if (value === "false") return false;
+  if (value === "true") return console.log;
+
+  return undefined;
+};
+
+const databaseConfig = (prefix) => ({
+  username: process.env[`${prefix}_DB_USERNAME`],
+  password: process.env[`${prefix}_DB_PASSWORD`],
+  database: process.env[`${prefix}_DB_NAME`],
+  host: process.env[`${prefix}_DB_HOSTNAME`],
+  dialect: process.env[`${prefix}_DB_DIALECT`],
+  logging: parseLogging(process.env[`${prefix}_DB_LOGGING`]),
+});
+
 /** @type {import('sequelize').Options} */
 module.exports = {
-  development: {
-    username: process.env.DEV_DB_USERNAME,
-    password: process.env.DEV_DB_PASSWORD,
-    database: process.env.DEV_DB_NAME,
-    host: process.env.DEV_DB_HOSTNAME,
-    dialect: process.env.DEV_DB_DIALECT,
-    logging: process.env.DEV_DB_LOGGING,
-  },
-  test: {
-    username: process.env.TEST_DB_USERNAME,
-    password: process.env.TEST_DB_PASSWORD,
-    database: process.env.TEST_DB_NAME,
-    host: process.env.TEST_DB_HOSTNAME,
-    dialect: process.env.TEST_DB_DIALECT,
-    logging: process.env.TEST_DB_LOGGING,
-  },
-  production: {
-    username: process.env.PROD_DB_USERNAME,
-    password: process.env.PROD_DB_PASSWORD,
-    database: process.env.PROD_DB_NAME,
-    host: process.env.PROD_DB_HOSTNAME,
-    dialect: process.env.PROD_DB_DIALECT,
-    logging: process.env.PROD_DB_LOGGING,
-  },
+  development: databaseConfig("DEV"),
+  test: databaseConfig("TEST"),
+  production: databaseConfig("PROD"),
 };
