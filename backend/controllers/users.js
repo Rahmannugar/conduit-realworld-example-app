@@ -2,10 +2,9 @@ const { User } = require("../models");
 const { jwtSign } = require("../helper/jwt");
 const { bcryptHash, bcryptCompare } = require("../helper/bcrypt");
 const {
-  ValidationError,
   FieldRequiredError,
   AlreadyTakenError,
-  NotFoundError,
+  UnauthorizedError,
 } = require("../helper/customErrors");
 
 // Register
@@ -41,12 +40,15 @@ const signUp = async (req, res, next) => {
 const signIn = async (req, res, next) => {
   try {
     const { user } = req.body;
+    if (!user?.email || !user?.password) {
+      throw new UnauthorizedError("Invalid email or password");
+    }
 
     const existentUser = await User.findOne({ where: { email: user.email } });
-    if (!existentUser) throw new NotFoundError("Email", "sign in first");
+    if (!existentUser) throw new UnauthorizedError("Invalid email or password");
 
     const pwd = await bcryptCompare(user.password, existentUser.password);
-    if (!pwd) throw new ValidationError("Wrong email/password combination");
+    if (!pwd) throw new UnauthorizedError("Invalid email or password");
 
     existentUser.dataValues.token = await jwtSign(user);
 

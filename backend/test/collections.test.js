@@ -1,6 +1,6 @@
 const request = require("supertest");
 const app = require("../index");
-const { sequelize } = require("../models");
+const { Tag, sequelize } = require("../models");
 const {
   authHeader,
   createArticle,
@@ -230,6 +230,25 @@ describe("Collections API", () => {
       ]);
       expect(response.body.articles[0].favorited).toBe(false);
       expect(response.body.articles[0].favoritesCount).toBe(0);
+      expect(response.body.articles[0].tagList).toEqual([]);
+    });
+
+    test("returns tagList as an array of strings", async () => {
+      const collection = await createCollection(owner, { name: "Saved" });
+      const article = await createArticle({ slug: "tagged-1", userId: owner.id });
+      const tag = await Tag.create({ name: "react" });
+      await article.setTagList([tag]);
+      await request(app)
+        .post(`/api/collections/${collection.id}/articles`)
+        .set(ownerAuth)
+        .send({ slug: article.slug });
+
+      const response = await request(app)
+        .get(`/api/collections/${collection.id}`)
+        .set(ownerAuth);
+
+      expect(response.status).toBe(200);
+      expect(response.body.articles[0].tagList).toEqual(["react"]);
     });
 
     test("does not expose another user's collection", async () => {

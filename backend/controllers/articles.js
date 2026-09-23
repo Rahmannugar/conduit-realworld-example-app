@@ -25,6 +25,15 @@ const includeOptions = [
   { model: User, as: "author", attributes: { exclude: ["email"] } },
 ];
 
+const includeArticleCollections = [
+  ...includeOptions,
+  {
+    model: Collection,
+    as: "collections",
+    attributes: ["id", "name"],
+  },
+];
+
 //? All Articles - by Author/by Tag/Favorited by user
 const allArticles = async (req, res, next) => {
   try {
@@ -195,7 +204,7 @@ const singleArticle = async (req, res, next) => {
     const { slug } = req.params;
     const article = await Article.findOne({
       where: { slug: slug },
-      include: includeOptions,
+      include: includeArticleCollections,
     });
     if (!article) throw new NotFoundError("Article");
 
@@ -218,7 +227,7 @@ const updateArticle = async (req, res, next) => {
     const { slug } = req.params;
     const article = await Article.findOne({
       where: { slug: slug },
-      include: includeOptions,
+      include: includeArticleCollections,
     });
     if (!article) throw new NotFoundError("Article");
 
@@ -226,14 +235,50 @@ const updateArticle = async (req, res, next) => {
       throw new ForbiddenError("article");
     }
 
-    const { title, description, body } = req.body.article;
+    const { title, description, body, collectionId } = req.body.article;
     if (title) {
       article.slug = slugify(title);
       article.title = title;
     }
     if (description) article.description = description;
     if (body) article.body = body;
-    await article.save();
+
+    await sequelize.transaction(async (transaction) => {
+      await article.save({ transaction });
+
+      if (collectionId === null) {
+        await ArticleCollection.destroy({
+          where: { articleId: article.id },
+          transaction,
+        });
+
+        return;
+      }
+
+      if (collectionId === undefined) return;
+
+      const parsedCollectionId = Number(collectionId);
+      if (!Number.isInteger(parsedCollectionId) || parsedCollectionId < 1) {
+        throw new NotFoundError("Collection");
+      }
+
+      const collection = await Collection.findOne({
+        where: { id: parsedCollectionId, userId: loggedUser.id },
+        transaction,
+      });
+      if (!collection) throw new NotFoundError("Collection");
+
+      const existing = await ArticleCollection.findOne({
+        where: { articleId: article.id, collectionId: collection.id },
+        transaction,
+      });
+      if (!existing) {
+        await ArticleCollection.create(
+          { articleId: article.id, collectionId: collection.id },
+          { transaction },
+        );
+      }
+    });
 
     appendTagList(article.tagList, article);
     await appendFollowers(loggedUser, article);

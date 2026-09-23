@@ -71,7 +71,7 @@ function SaveToCollection({ slug }) {
           ) : (
             collections.map((collection) => (
               <button
-                className="btn btn-sm btn-secondary"
+                className="btn btn-sm btn-outline-secondary"
                 disabled={pendingId === collection.id}
                 key={collection.id}
                 onClick={() => save(collection)}

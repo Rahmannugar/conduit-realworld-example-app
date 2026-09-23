@@ -13,7 +13,7 @@ function AuthPageContainer({ children, error, path, text, title }) {
 
           {error && (
             <ul className="error-messages">
-              <li>{error}</li>
+              <li>{error?.message || String(error)}</li>
             </ul>
           )}
 

@@ -74,11 +74,16 @@ const decorateArticles = async (user, articles) => {
   );
   const favoritedIds = new Set(favoritedRows.map((row) => row.articleId));
 
-  return articles.map((article) => ({
-    ...article.toJSON(),
-    favorited: favoritedIds.has(article.id),
-    favoritesCount: favoriteCounts[article.id] || 0,
-  }));
+  return articles.map((article) => {
+    const json = article.toJSON();
+
+    return {
+      ...json,
+      tagList: (json.tagList ?? []).map((tag) => tag.name ?? tag),
+      favorited: favoritedIds.has(article.id),
+      favoritesCount: favoriteCounts[article.id] || 0,
+    };
+  });
 };
 
 const cursorOptions = (cursor, key) => {

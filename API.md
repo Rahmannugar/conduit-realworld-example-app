@@ -74,6 +74,7 @@ Pass `nextCursor` from the previous response back as `?cursor=...`. It is `null`
     {
       "slug": "lorem-ipsum-1",
       "title": "...",
+      "tagList": ["dragons"],
       "author": { "username": "exampleUser1" },
       "favorited": false,
       "favoritesCount": 0
@@ -161,3 +162,20 @@ Not in the collection → `404`.
 - Collection must belong to the user (`404` otherwise, and the article is not created).
 - Article, tags, and membership are created in one transaction.
 - Omit `collectionId` for the original behaviour — same request and response, no membership.
+
+### Update an article's collection
+
+`PUT /api/articles/:slug` accepts an optional `collectionId`:
+
+```json
+{ "article": { "title": "...", "description": "...", "body": "...", "collectionId": 1 } }
+```
+
+| `collectionId` | Effect |
+| -------------- | ------ |
+| omitted | Text fields update; membership unchanged |
+| integer | Ensure membership (idempotent); other memberships kept |
+| `null` | Remove the article from **all** collections |
+
+- Collection must belong to the user (`404` otherwise).
+- `GET /api/articles/:slug` includes `collections: [{ "id", "name" }]` so the edit form can preselect.

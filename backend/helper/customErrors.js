@@ -16,8 +16,8 @@ class NotFoundError extends MyError {
   }
 }
 class UnauthorizedError extends MyError {
-  constructor() {
-    super("You need to login first!");
+  constructor(message = "You need to login first!") {
+    super(message);
   }
 }
 
