@@ -12,7 +12,6 @@ vi.mock("../services/collections", () => ({
   addArticleToCollection: vi.fn(),
   createCollection: vi.fn(),
   deleteCollection: vi.fn(),
-  getArticleCollections: vi.fn(),
   listCollections: vi.fn(),
   removeArticleFromCollection: vi.fn(),
   updateCollection: vi.fn(),

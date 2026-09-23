@@ -26,9 +26,6 @@ test("login, create a collection, save an article, view it and remove it", async
   await page.goto("/#/article/lorem-ipsum-1");
   await page.getByRole("button", { name: "Save to collection" }).click();
   await page.getByRole("button", { name: new RegExp(collectionName) }).click();
-  await expect(
-    page.getByRole("button", { name: new RegExp(`Saved.*${collectionName}`) }),
-  ).toBeVisible();
 
   // View the article inside the collection
   await page.goto("/#/collections");

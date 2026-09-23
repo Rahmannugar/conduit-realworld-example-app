@@ -101,6 +101,17 @@ describe("Collections API", () => {
       expect(response.status).toBe(409);
     });
 
+    test("rejects a duplicate name that differs only by case", async () => {
+      await createCollection(owner, { name: "Reading" });
+
+      const response = await request(app)
+        .post("/api/collections")
+        .set(ownerAuth)
+        .send({ collection: { name: "reading" } });
+
+      expect(response.status).toBe(409);
+    });
+
     test("allows the same name for a different user", async () => {
       await createCollection(owner, { name: "Shared" });
 
@@ -108,6 +119,17 @@ describe("Collections API", () => {
         .post("/api/collections")
         .set(strangerAuth)
         .send({ collection: { name: "Shared" } });
+
+      expect(response.status).toBe(201);
+    });
+
+    test("allows a different-case name for a different user", async () => {
+      await createCollection(owner, { name: "Shared" });
+
+      const response = await request(app)
+        .post("/api/collections")
+        .set(strangerAuth)
+        .send({ collection: { name: "shared" } });
 
       expect(response.status).toBe(201);
     });
@@ -259,6 +281,18 @@ describe("Collections API", () => {
         .patch(`/api/collections/${collection.id}`)
         .set(ownerAuth)
         .send({ collection: { name: "Existing" } });
+
+      expect(response.status).toBe(409);
+    });
+
+    test("rejects renaming to an existing name that differs only by case", async () => {
+      await createCollection(owner, { name: "Existing" });
+      const collection = await createCollection(owner, { name: "Other" });
+
+      const response = await request(app)
+        .patch(`/api/collections/${collection.id}`)
+        .set(ownerAuth)
+        .send({ collection: { name: "existing" } });
 
       expect(response.status).toBe(409);
     });

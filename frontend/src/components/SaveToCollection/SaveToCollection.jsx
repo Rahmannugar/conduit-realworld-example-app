@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
-  useArticleCollectionsQuery,
   useCollectionMutations,
   useCollectionsQuery,
 } from "../../hooks/useCollections";
@@ -13,32 +12,18 @@ function SaveToCollection({ slug }) {
   const [errorMessage, setErrorMessage] = useState("");
 
   const collectionsQuery = useCollectionsQuery({ limit: 50 });
-  const membershipQuery = useArticleCollectionsQuery({ slug });
-  const { addArticle, removeArticle } = useCollectionMutations();
+  const { addArticle } = useCollectionMutations();
 
   if (!isAuth) return null;
 
   const collections =
     collectionsQuery.data?.pages.flatMap((page) => page.collections) ?? [];
-  const savedIds = new Set(membershipQuery.data ?? []);
   const pendingId = addArticle.isPending
     ? addArticle.variables?.collectionId
-    : removeArticle.isPending
-      ? removeArticle.variables?.collectionId
-      : null;
+    : null;
 
-  const toggle = (collection) => {
+  const save = (collection) => {
     setErrorMessage("");
-
-    if (savedIds.has(collection.id)) {
-      removeArticle.mutate(
-        { collectionId: collection.id, slug },
-        { onError: (error) => setErrorMessage(error.message) },
-      );
-
-      return;
-    }
-
     addArticle.mutate(
       { collectionId: collection.id, slug },
       { onError: (error) => setErrorMessage(error.message) },
@@ -89,12 +74,11 @@ function SaveToCollection({ slug }) {
                 className="btn btn-sm btn-secondary"
                 disabled={pendingId === collection.id}
                 key={collection.id}
-                onClick={() => toggle(collection)}
+                onClick={() => save(collection)}
                 style={{ display: "block", marginBottom: "0.35rem", width: "100%" }}
                 type="button"
               >
-                {savedIds.has(collection.id) ? "✓ Saved" : "Save"} —{" "}
-                {collection.name}
+                Save — {collection.name}
               </button>
             ))
           )}

@@ -1,6 +1,5 @@
 const {
   Article,
-  ArticleCollection,
   Collection,
   User,
   sequelize,
@@ -47,13 +46,6 @@ const createCollection = async (user, overrides = {}) => {
   });
 };
 
-const addMembership = async (collection, article) => {
-  return ArticleCollection.create({
-    collectionId: collection.id,
-    articleId: article.id,
-  });
-};
-
 const authHeader = async (user) => {
   const token = await jwtSign({ username: user.username, email: user.email });
 
@@ -61,7 +53,6 @@ const authHeader = async (user) => {
 };
 
 module.exports = {
-  addMembership,
   authHeader,
   createArticle,
   createCollection,

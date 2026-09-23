@@ -1,44 +1,41 @@
-# API Reference
+# API — Collections
 
-This document describes the Collections feature endpoints added to the
-RealWorld/Conduit API. All other article, authentication, profile, comment and
-feed endpoints are unchanged; see the [RealWorld API spec](https://github.com/gothinkster/realworld/tree/main/api)
-for those.
+Private article collections. All other RealWorld endpoints are unchanged.
 
-## Authentication
+**Auth:** every endpoint below requires `Authorization: Token <jwt>`.
 
-Every Collections endpoint requires an authenticated user. Send the token
-returned by `POST /api/users/login` in the `Authorization` header:
+**Ownership:** queries are scoped to the signed-in user. Another user's collection returns `404`.
 
-```
-Authorization: Token <jwt>
-```
+## Quick reference
 
-A missing or invalid token returns `401`. Ownership is enforced server-side:
-every query is scoped to the authenticated user, so another user's collection is
-indistinguishable from a non-existent one (`404`).
+| Method | Path | Purpose |
+| ------ | ---- | ------- |
+| `POST` | `/api/collections` | Create a collection |
+| `GET` | `/api/collections` | List your collections |
+| `GET` | `/api/collections/:collectionId` | Get a collection + its articles |
+| `PATCH` | `/api/collections/:collectionId` | Rename / edit description |
+| `DELETE` | `/api/collections/:collectionId` | Delete collection (articles kept) |
+| `POST` | `/api/collections/:collectionId/articles` | Add an article by slug |
+| `DELETE` | `/api/collections/:collectionId/articles/:slug` | Remove an article |
 
-## Error shape
+## Conventions
 
-Errors use the same envelope as the rest of the API:
+**Errors**
 
 ```json
 { "errors": { "body": ["Collection not found"] } }
 ```
 
-| Status | Meaning                                                              |
-| ------ | -------------------------------------------------------------------- |
-| `400`  | Malformed query parameter (invalid cursor or limit)                  |
-| `401`  | Missing or invalid token                                             |
-| `404`  | Collection or article not found, or not owned by the current user    |
-| `409`  | Conflict (duplicate collection name, or duplicate article membership)|
-| `422`  | Validation failure (e.g. missing name or slug)                       |
+| Status | Meaning |
+| ------ | ------- |
+| `400` | Invalid query param |
+| `401` | Not authenticated |
+| `404` | Not found / not owned |
+| `409` | Duplicate name or membership |
+| `422` | Validation failed |
 
-## Pagination
-
-List responses use cursor pagination. Pass `limit` (default `20`, maximum `50`).
-Responses include `nextCursor`; pass it back as the `cursor` query parameter to
-fetch the next page. `nextCursor` is `null` on the last page. Cursors are opaque.
+**Pagination** (list + collection detail): cursor-based. `limit` defaults to `20`, max `50`.
+Pass `nextCursor` from the previous response back as `?cursor=...`. It is `null` on the last page.
 
 ## Endpoints
 
@@ -50,41 +47,17 @@ fetch the next page. `nextCursor` is `null` on the last page. Cursors are opaque
 { "collection": { "name": "Reading list", "description": "optional" } }
 ```
 
-- `name` is required and must be unique per user.
-- `description` is optional.
+- `name` is required and unique per user, case-insensitively (`Reading` and `reading` conflict).
+- `201` → `{ "collection": { "id": 1, "name": "Reading list", "description": "optional", "articlesCount": 0 } }`
 
-`201` response:
+### List collections
 
-```json
-{
-  "collection": {
-    "id": 1,
-    "name": "Reading list",
-    "description": "optional",
-    "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-01-01T00:00:00.000Z",
-    "articlesCount": 0
-  }
-}
-```
-
-### List the current user's collections
-
-`GET /api/collections?limit=20&cursor=<opaque>`
-
-`200` response:
+`GET /api/collections?limit=20&cursor=<opaque>` → `200`
 
 ```json
 {
   "collections": [
-    {
-      "id": 1,
-      "name": "Reading list",
-      "description": "optional",
-      "createdAt": "2026-01-01T00:00:00.000Z",
-      "updatedAt": "2026-01-01T00:00:00.000Z",
-      "articlesCount": 3
-    }
+    { "id": 1, "name": "Reading list", "description": null, "articlesCount": 3 }
   ],
   "nextCursor": null
 }
@@ -92,14 +65,7 @@ fetch the next page. `nextCursor` is `null` on the last page. Cursors are opaque
 
 ### Get a collection and its articles
 
-`GET /api/collections/:collectionId?limit=20&cursor=<opaque>`
-
-The `collection` object includes `articlesCount`, the total number of saved
-articles (not just the current page). `articles` contains the paginated article
-payloads, each shaped like the standard article response with `favorited` and
-`favoritesCount` relative to the current user.
-
-`200` response:
+`GET /api/collections/:collectionId?limit=20&cursor=<opaque>` → `200`
 
 ```json
 {
@@ -107,10 +73,7 @@ payloads, each shaped like the standard article response with `favorited` and
   "articles": [
     {
       "slug": "lorem-ipsum-1",
-      "title": "Lorem Ipsum 1",
-      "description": "...",
-      "body": "...",
-      "tagList": [],
+      "title": "...",
       "author": { "username": "exampleUser1" },
       "favorited": false,
       "favoritesCount": 0
@@ -122,25 +85,23 @@ payloads, each shaped like the standard article response with `favorited` and
 
 ### Update a collection
 
-`PATCH /api/collections/:collectionId`
+`PATCH /api/collections/:collectionId` — send only the fields to change.
 
 ```json
 { "collection": { "name": "New name", "description": "New description" } }
 ```
 
-Send only the fields to change. An empty update returns `422`. Renaming to a name
-already used by another of the user's collections returns `409`.
-
-`200` response: `{ "collection": { ... } }`
+- Empty body → `422`
+- Duplicate name → `409`
+- `200` → `{ "collection": { ... } }`
 
 ### Delete a collection
 
-`DELETE /api/collections/:collectionId`
+`DELETE /api/collections/:collectionId` → `204`
 
-Deletes the collection and its memberships. **Articles are not deleted.**
-Returns `204` with no body.
+Memberships are removed; **articles are not deleted**.
 
-### Add an article to a collection
+### Add an article
 
 `POST /api/collections/:collectionId/articles`
 
@@ -148,47 +109,55 @@ Returns `204` with no body.
 { "slug": "lorem-ipsum-1" }
 ```
 
-- The article is addressed by slug, consistent with the rest of the API.
-- Adding an article already in the collection returns `409`.
-- The collection must belong to the authenticated user, otherwise `404`.
+- `201` → `{ "article": { ... } }`
+- Already in the collection → `409`
 
-`201` response: `{ "article": { ... } }`
+### Remove an article
 
-### Remove an article from a collection
+`DELETE /api/collections/:collectionId/articles/:slug` → `204`
 
-`DELETE /api/collections/:collectionId/articles/:slug`
+Not in the collection → `404`.
 
-Returns `204` with no body. If the article is not currently in the collection,
-returns `404`.
+### Create an article into a collection
 
-### List the user's collections containing an article
-
-`GET /api/articles/:slug/collections`
-
-Returns the ids of the authenticated user's collections that contain the article.
-Used by the "Save to collection" control on the article page.
-
-`200` response: `{ "collectionIds": [1, 2] }`
-
-### Create an article into a collection (extension)
-
-`POST /api/articles`
-
-The existing endpoint accepts an optional `collectionId`:
+`POST /api/articles` — optional `collectionId` in the article payload.
 
 ```json
 {
   "article": {
-    "title": "A title",
-    "description": "A description",
-    "body": "The body",
-    "tagList": ["tag"],
+    "title": "How to train your dragon",
+    "description": "Ever wonder how?",
+    "body": "It takes a Jacobian",
+    "tagList": ["dragons"],
     "collectionId": 1
   }
 }
 ```
 
-When `collectionId` is present the collection is verified to belong to the
-authenticated user, and the article, its tags and the membership are created in a
-single transaction. An unknown or unowned `collectionId` returns `404` and no
-article is created. Omitting `collectionId` keeps the original behaviour.
+`201`:
+
+```json
+{
+  "article": {
+    "slug": "how-to-train-your-dragon",
+    "title": "How to train your dragon",
+    "description": "Ever wonder how?",
+    "body": "It takes a Jacobian",
+    "tagList": ["dragons"],
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z",
+    "favorited": false,
+    "favoritesCount": 0,
+    "author": {
+      "username": "exampleUser1",
+      "bio": null,
+      "image": "https://i.imgur.com/mYWRJZr.png",
+      "following": false
+    }
+  }
+}
+```
+
+- Collection must belong to the user (`404` otherwise, and the article is not created).
+- Article, tags, and membership are created in one transaction.
+- Omit `collectionId` for the original behaviour — same request and response, no membership.
