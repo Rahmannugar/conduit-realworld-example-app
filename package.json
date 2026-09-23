@@ -25,5 +25,11 @@
     "@vitejs/plugin-react-swc": "^4.2.3",
     "concurrently": "^9.2.1",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "sequelize": {
+      "uuid": "11.1.1"
+    },
+    "vite": "7.3.6"
   }
 }
