@@ -22,7 +22,7 @@ export default defineConfig({
           environment: "jsdom",
           globals: true,
           setupFiles: "frontend/src/setupTests.js",
-          include: ["frontend/**/*.test.js"],
+          include: ["frontend/**/*.test.{js,jsx}"],
           css: true,
         },
       },

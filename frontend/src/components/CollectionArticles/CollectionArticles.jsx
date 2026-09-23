@@ -13,18 +13,14 @@ function CollectionArticles({ articles, removingSlug, onRemove }) {
 
   return articles.map((article) => (
     <div className="article-preview" key={article.slug}>
-      <div className="pull-xs-right">
+      <ArticleMeta author={article.author} createdAt={article.createdAt}>
         <button
-          className="btn btn-sm btn-outline-danger"
+          className="btn btn-sm btn-outline-danger pull-xs-right"
           disabled={removingSlug === article.slug}
           onClick={() => onRemove(article)}
         >
           {removingSlug === article.slug ? "Removing..." : "Remove"}
         </button>
-      </div>
-
-      <ArticleMeta author={article.author} createdAt={article.createdAt}>
-        <span></span>
       </ArticleMeta>
 
       <Link
