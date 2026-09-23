@@ -1,8 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import App from "./App";
 import AuthProvider from "./context/AuthContext";
+import queryClient from "./queryClient";
 import "./styles.css";
 import "./index.css";
 import reportWebVitals from "./reportWebVitals";
@@ -21,9 +23,10 @@ import SignUp from "./routes/SignUp";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <HashRouter>
-      <AuthProvider>
-        <Routes>
+    <QueryClientProvider client={queryClient}>
+      <HashRouter>
+        <AuthProvider>
+          <Routes>
           <Route element={<App />}>
             <Route path="/" element={<Home />}>
               <Route index element={<HomeArticles />} />
@@ -51,6 +54,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </Routes>
       </AuthProvider>
     </HashRouter>
+    </QueryClientProvider>
   </React.StrictMode>,
   );
 
